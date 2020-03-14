@@ -9,11 +9,10 @@
 		
 		function __construct($param = FALSE)
 		{		
-			$reflec = new ReflectionClass($this); 
-			$this->properties = $reflec->getProperties(ReflectionProperty::IS_PUBLIC | ReflectionProperty::IS_PROTECTED | ReflectionProperty::IS_PRIVATE);
-			//var_dump($param); 
+			$this->properties = (new ReflectionClass($this))->getProperties(ReflectionProperty::IS_PUBLIC | ReflectionProperty::IS_PROTECTED | ReflectionProperty::IS_PRIVATE);
 			if($param)
-				if(is_array($param) && count($param) == count($this->properties))
+					$this->setFromClass($param);
+				/*if(is_array($param) && count($param) == count($this->properties))
 					self::setFromArguments($param);
 					
 				//if($param && is_array ($param));
@@ -28,9 +27,9 @@
 					/*preg_match($regex, $line, $matches);
 					$varname = $matches[0];
 					var_dump($matches); 
-					*/
+					*
 					 
-				}
+				}*/
 
 
 		}
@@ -39,6 +38,44 @@
 		*/
 		private function setFromClass($array, $sobreescribir = false)
 		{	
+
+			if(is_array ($array)){
+				if($sobreescribir){
+					foreach ($this->properties as $property) {
+						$var_name  = $property->getName();
+						if(isset($array[$var_name])){
+							//Permite modificar el valor haciendo $set_value()
+							$this->setPrivate($var_name, $array[$var_name]);
+						}
+					}
+				}else{
+						//var_dump($this->properties);
+					foreach ($this->properties as $property) {
+						$var_name  = $property->getName();
+						if(isset($array[$var_name]) && is_null($this->getPrivate($var_name))){
+							$this->setPrivate( $var_name, $array[$var_name]);
+						}
+					}
+				}
+			}else if(is_object($array) && get_class($array) == "stdClass"){
+				if($sobreescribir){
+					foreach ($this->properties as $property) {
+						$var_name  = $property->getName();
+						if(isset($array->$var_name)){
+							$this->setPrivate($var_name, $array->$var_name);
+						}
+					}
+				}else{
+					foreach ($this->properties as $property) {
+						$var_name  = $property->getName();
+						if(isset($array->$var_name) && is_null($this->getPrivate($var_name))){
+							$this->setPrivate($var_name, $array->$var_name);
+						}
+					}
+				}
+			}
+
+			/*
 			//Prmite acceder a las variables privadas
 			//Recorremos los atributos 
 			//var_dump($this->properties); 
@@ -59,7 +96,7 @@
 							$set_value = self::setPrivate($this, $var_name)($array["$var_name"]);
 						}
 
-			}
+			}*/
 
 
 			//Recorremos todas las variables
@@ -93,7 +130,7 @@
 		public function __call($name, $arguments)
 	    {
 
-	        $name = strtolower(str_replace("_","", $name));
+			$name = strtolower(str_replace("_","", $name));
 			foreach ($this->properties as $property) {
 				$var_name  = strtolower($property->getName());
 				//echo "var_name = " . "get".$var_name . "<br>";
@@ -107,18 +144,24 @@
 		    }
 	    }
 
-		private function getPrivate($obj, $attribute) {
-        $getter = function() use ($attribute) {return $this->$attribute;};
-        return \Closure::bind($getter, $obj, get_class($obj));
+		private function getPrivate($attribute) {
+
+		$getter = function() use ($attribute) {return $this->$attribute;};
+        return Closure::bind($getter, $this, get_class($this))();
 	    }
 	    
-	    private function setPrivate($obj, $attribute) {
+	    private function setPrivate($attribute, $value) {
 	        $setter = function($value) use ($attribute) {$this->$attribute = $value;};
-	        return \Closure::bind($setter, $obj, get_class($obj));
-	    }
+	        return Closure::bind($setter, $this, get_class($this))($value);
+		}
+		
+		public static function validateString(string $text)
+		{
+			return "";
+		}
 	}
 
-
+	
  
 	function getCallingLine($caller)
 	{

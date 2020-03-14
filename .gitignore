@@ -1,0 +1,7 @@
+# Config
+config
+*.config
+
+# Caché
+app/var/
+

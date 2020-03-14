@@ -1,23 +1,38 @@
 <?php 
-	require_once 'app/controllers/Index.class.php';
+	require_once 'app/controllers/tools/Request.class.php';
 	
 /**
  * 
  */
-abstract class ControllerFactory
+final class ControllerFactory
 {
-	
-	public static function createController($path)
-	{
-		switch ($path) {
-			case 'index.php':
-				return new Index(); 
+	private function __construct(){}
+
+	public static function createController()
+	{	
+		$request = new Request(); 
+		//echo $request->getPath();
+		switch ($request->getNextElement()) {
+			case '':
+			case 'index':
+				require_once 'app/controllers/Index.class.php';
+				return new Index($request); 
+				break;
+			case 'login':
+				require_once 'app/controllers/Login.class.php';
+				return new Login($request); 
+				break;
+			case 'avisocookies':
+				require_once 'app/controllers/AvisoCookies.class.php';
+				return new AvisoCookies($request); 
 				break;
 			default:
-				return new NotFound();
+				require_once 'app/controllers/NotFound.class.php';
+				return new NotFound($request);
 				break;
 		}
 	}
+
 }
 
 
